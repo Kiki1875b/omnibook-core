@@ -43,3 +43,6 @@ application-prod.properties
 
 # ===== Generated =====
 target/
+
+CLAUDE.md
+.claude/

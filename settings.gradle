@@ -1,1 +1,3 @@
 rootProject.name = 'omnibook-core'
+include 'omnibook-broker'
+include 'omnibook-simulator'
