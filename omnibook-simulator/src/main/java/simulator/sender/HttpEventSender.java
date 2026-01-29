@@ -1,6 +1,7 @@
 package simulator.sender;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
 import simulator.platform.PlatformType;
 
 import java.net.URI;
@@ -13,6 +14,7 @@ import java.time.Duration;
  * HTTP JSON event sender.
  * Adds platform and correlation metadata as headers.
  */
+@Component
 public class HttpEventSender implements EventSender {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

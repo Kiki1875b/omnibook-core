@@ -1,5 +1,6 @@
 package simulator.platform;
 
+import org.springframework.stereotype.Component;
 import simulator.platform.payload.AirbnbReservationPayload;
 
 import java.time.LocalDate;
@@ -11,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Global host-based OTA. Nights-based model.
  * Strict check-in/check-out. Fewer modifications. Timezone-aware.
  */
+@Component
 public class AirbnbPlatform extends AbstractOtaPlatform {
 
     private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

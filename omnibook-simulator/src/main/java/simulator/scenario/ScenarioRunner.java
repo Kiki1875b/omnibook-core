@@ -1,5 +1,8 @@
 package simulator.scenario;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import simulator.chaos.ChaosEngine;
 import simulator.platform.OtaPlatform;
 import simulator.platform.PlatformType;
@@ -13,24 +16,17 @@ import java.util.UUID;
 /**
  * Runs a single scenario with a fresh ScenarioContext and unique correlationId.
  */
+@Service
+@RequiredArgsConstructor
 public class ScenarioRunner {
 
     private final Map<PlatformType, OtaPlatform> platforms;
     private final EventSender sender;
     private final ChaosEngine chaosEngine;
-    private final String targetUrl;
     private final ReportPrinter printer;
 
-    public ScenarioRunner(Map<PlatformType, OtaPlatform> platforms,
-                          EventSender sender,
-                          ChaosEngine chaosEngine,
-                          String targetUrl) {
-        this.platforms = platforms;
-        this.sender = sender;
-        this.chaosEngine = chaosEngine;
-        this.targetUrl = targetUrl;
-        this.printer = new ReportPrinter();
-    }
+    @Value("${simulator.target-url}")
+    private String targetUrl;
 
     public ScenarioResult run(Scenario scenario) {
         String correlationId = UUID.randomUUID().toString();

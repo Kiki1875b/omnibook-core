@@ -1,5 +1,6 @@
 package simulator.platform;
 
+import org.springframework.stereotype.Component;
 import simulator.platform.payload.YanoljaReservationPayload;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Korean domestic mobile-first OTA.
  * Frequent same-day book/cancel. Coupon/promo heavy. KRW integer pricing.
  */
+@Component
 public class YanoljaPlatform extends AbstractOtaPlatform {
 
     private static final String[] PAYMENT_METHODS = {"CARD", "KAKAO_PAY", "TOSS_PAY", "NAVER_PAY"};

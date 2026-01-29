@@ -1,5 +1,7 @@
 package simulator.report;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import simulator.platform.PlatformType;
 
 import java.util.ArrayList;
@@ -8,6 +10,7 @@ import java.util.List;
 /**
  * Collects all events emitted during a scenario execution for reporting.
  */
+@Getter
 public class ExecutionReport {
 
     private final String scenarioName;
@@ -34,31 +37,15 @@ public class ExecutionReport {
         entries.add(new Entry(platform, eventType, reservationId, chaosEffect, delivered));
     }
 
-    public String getScenarioName() { return scenarioName; }
-    public String getCorrelationId() { return correlationId; }
-    public List<Entry> getEntries() { return entries; }
     public long getDurationMs() { return endTimeMs - startTimeMs; }
 
+    @Getter
+    @AllArgsConstructor
     public static class Entry {
         private final PlatformType platform;
         private final String eventType;
         private final String reservationId;
         private final String chaosEffect;
         private final boolean delivered;
-
-        public Entry(PlatformType platform, String eventType, String reservationId,
-                     String chaosEffect, boolean delivered) {
-            this.platform = platform;
-            this.eventType = eventType;
-            this.reservationId = reservationId;
-            this.chaosEffect = chaosEffect;
-            this.delivered = delivered;
-        }
-
-        public PlatformType getPlatform() { return platform; }
-        public String getEventType() { return eventType; }
-        public String getReservationId() { return reservationId; }
-        public String getChaosEffect() { return chaosEffect; }
-        public boolean isDelivered() { return delivered; }
     }
 }

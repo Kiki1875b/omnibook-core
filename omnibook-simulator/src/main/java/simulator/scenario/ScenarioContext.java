@@ -1,5 +1,6 @@
 package simulator.scenario;
 
+import lombok.RequiredArgsConstructor;
 import simulator.chaos.ChaosDecision;
 import simulator.chaos.ChaosEngine;
 import simulator.platform.OtaPlatform;
@@ -13,6 +14,7 @@ import java.util.Map;
  * Shared context available to every scenario during execution.
  * Provides access to platforms, sender, chaos engine, and the execution report.
  */
+@RequiredArgsConstructor
 public class ScenarioContext {
 
     private final Map<PlatformType, OtaPlatform> platforms;
@@ -21,20 +23,6 @@ public class ScenarioContext {
     private final String targetUrl;
     private final String correlationId;
     private final ExecutionReport report;
-
-    public ScenarioContext(Map<PlatformType, OtaPlatform> platforms,
-                           EventSender sender,
-                           ChaosEngine chaosEngine,
-                           String targetUrl,
-                           String correlationId,
-                           ExecutionReport report) {
-        this.platforms = platforms;
-        this.sender = sender;
-        this.chaosEngine = chaosEngine;
-        this.targetUrl = targetUrl;
-        this.correlationId = correlationId;
-        this.report = report;
-    }
 
     public OtaPlatform platform(PlatformType type) {
         return platforms.get(type);

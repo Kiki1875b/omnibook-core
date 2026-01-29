@@ -1,10 +1,13 @@
 package simulator.report;
 
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 
 /**
  * Console-based execution report printer.
  */
+@Component
 public class ReportPrinter {
 
     public void print(ExecutionReport report) {

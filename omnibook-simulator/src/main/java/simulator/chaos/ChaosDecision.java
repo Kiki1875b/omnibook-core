@@ -1,9 +1,14 @@
 package simulator.chaos;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * Result of the chaos engine evaluating a single event delivery.
  * Describes what chaos effects should be applied.
  */
+@Getter
+@AllArgsConstructor
 public class ChaosDecision {
 
     private final boolean duplicate;
@@ -12,25 +17,9 @@ public class ChaosDecision {
     private final long delayMs;
     private final boolean fail;
 
-    public ChaosDecision(boolean duplicate, int duplicateCount,
-                         boolean delay, long delayMs,
-                         boolean fail) {
-        this.duplicate = duplicate;
-        this.duplicateCount = duplicateCount;
-        this.delay = delay;
-        this.delayMs = delayMs;
-        this.fail = fail;
-    }
-
     public static ChaosDecision clean() {
         return new ChaosDecision(false, 0, false, 0, false);
     }
-
-    public boolean isDuplicate() { return duplicate; }
-    public int getDuplicateCount() { return duplicateCount; }
-    public boolean isDelay() { return delay; }
-    public long getDelayMs() { return delayMs; }
-    public boolean isFail() { return fail; }
 
     @Override
     public String toString() {

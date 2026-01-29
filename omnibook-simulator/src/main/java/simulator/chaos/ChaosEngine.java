@@ -1,5 +1,8 @@
 package simulator.chaos;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -7,17 +10,14 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Chaos engine for delivery-level disruption.
- * Never modifies payload content — only affects how/when/how-many-times events are delivered.
+ * Never modifies payload content -- only affects how/when/how-many-times events are delivered.
  */
+@Component
+@RequiredArgsConstructor
 public class ChaosEngine {
 
     private final ChaosConfig config;
 
-    public ChaosEngine(ChaosConfig config) {
-        this.config = config;
-    }
-
-    /** Decide what chaos to apply to a single event delivery. */
     public ChaosDecision decide() {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
 
@@ -32,10 +32,6 @@ public class ChaosEngine {
         return new ChaosDecision(dup, dupCount, delay, delayMs, fail);
     }
 
-    /**
-     * Apply reorder chaos to a list of event indices.
-     * Returns a potentially shuffled copy of the input list.
-     */
     public <T> List<T> maybeReorder(List<T> events) {
         if (ThreadLocalRandom.current().nextDouble() < config.getReorderProbability()) {
             List<T> shuffled = new ArrayList<>(events);

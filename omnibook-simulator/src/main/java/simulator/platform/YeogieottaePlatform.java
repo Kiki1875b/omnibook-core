@@ -1,5 +1,6 @@
 package simulator.platform;
 
+import org.springframework.stereotype.Component;
 import simulator.platform.payload.YeogieottaeReservationPayload;
 
 import java.time.Instant;
@@ -13,6 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Coarser status granularity. Delayed/reordered events are common.
  * Compact date format (yyyyMMdd). Epoch SECONDS for timestamps.
  */
+@Component
 public class YeogieottaePlatform extends AbstractOtaPlatform {
 
     private static final DateTimeFormatter COMPACT_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");

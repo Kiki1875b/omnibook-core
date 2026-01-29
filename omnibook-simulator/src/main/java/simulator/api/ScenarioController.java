@@ -1,5 +1,6 @@
 package simulator.api;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,13 +11,10 @@ import simulator.scenario.impl.SimpleBookingScenario;
 
 @RestController
 @RequestMapping("/api/scenarios")
+@RequiredArgsConstructor
 public class ScenarioController {
 
     private final ScenarioRunner scenarioRunner;
-
-    public ScenarioController(ScenarioRunner scenarioRunner) {
-        this.scenarioRunner = scenarioRunner;
-    }
 
     @PostMapping("/simple-booking")
     public ResponseEntity<ScenarioResponse> runSimpleBooking() {
