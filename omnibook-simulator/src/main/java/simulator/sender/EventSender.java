@@ -1,20 +1,32 @@
 package simulator.sender;
 
-import simulator.platform.PlatformType;
+import simulator.event.PlatformEvent;
 
 /**
- * Sends a platform event to the broker over HTTP.
+ * 플랫폼 이벤트를 브로커로 전송하는 인터페이스.
  */
 public interface EventSender {
 
     /**
-     * @param targetUrl     broker endpoint URL
-     * @param platform      source platform (A/B/C)
-     * @param eventType     BOOKING or CANCELLATION
-     * @param payload       platform-specific payload object (will be JSON-serialized)
-     * @param correlationId groups all events belonging to one scenario run
-     * @return true if delivery succeeded (HTTP 2xx), false otherwise
+     * PlatformEvent를 브로커로 전송한다.
+     *
+     * HTTP 전송 규칙:
+     * Headers:
+     * - X-Event-Id = event.eventId
+     * - X-Platform = event.platform
+     * - X-Event-Type = event.eventType
+     * - X-Correlation-Id = event.correlationId
+     *
+     * Body:
+     * {
+     *   "eventId": "...",
+     *   "reservationId": "...",
+     *   "payload": { OTA payload JSON }
+     * }
+     *
+     * @param targetUrl 브로커 엔드포인트 URL
+     * @param event     전송할 이벤트
+     * @return 전송 성공 여부 (HTTP 2xx면 true)
      */
-    boolean send(String targetUrl, PlatformType platform, String eventType,
-                 Object payload, String correlationId);
+    boolean send(String targetUrl, PlatformEvent event);
 }

@@ -32,9 +32,9 @@ public class ExecutionReport {
         this.endTimeMs = System.currentTimeMillis();
     }
 
-    public void addEntry(PlatformType platform, String eventType, String reservationId,
-                         String chaosEffect, boolean delivered) {
-        entries.add(new Entry(platform, eventType, reservationId, chaosEffect, delivered));
+    public void addEntry(PlatformType platform, String eventType, String eventId,
+                         String reservationId, String chaosEffect, boolean delivered) {
+        entries.add(new Entry(platform, eventType, eventId, reservationId, chaosEffect, delivered));
     }
 
     public long getDurationMs() { return endTimeMs - startTimeMs; }
@@ -44,7 +44,8 @@ public class ExecutionReport {
     public static class Entry {
         private final PlatformType platform;
         private final String eventType;
-        private final String reservationId;
+        private final String eventId;       // 이 전송 시도의 식별자
+        private final String reservationId; // 예약의 ID (eventId와 별개)
         private final String chaosEffect;
         private final boolean delivered;
     }
