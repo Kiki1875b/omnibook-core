@@ -6,6 +6,7 @@ import com.sprint.omnibook.broker.event.EventType;
 import com.sprint.omnibook.broker.event.PlatformType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
 import com.sprint.omnibook.broker.event.ReservationStatus;
+import com.sprint.omnibook.broker.persistence.RawEventService;
 import com.sprint.omnibook.broker.translator.PayloadTranslator;
 import com.sprint.omnibook.broker.translator.TranslationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,9 @@ import static org.mockito.BDDMockito.then;
 class EventIngestionServiceTest {
 
     @Mock
+    private RawEventService rawEventService;
+
+    @Mock
     private PayloadTranslator yanoljaTranslator;
 
     @Mock
@@ -56,7 +60,7 @@ class EventIngestionServiceTest {
         translators.put(PlatformType.AIRBNB, airbnbTranslator);
         translators.put(PlatformType.YEOGIEOTTAE, yeogieottaeTranslator);
 
-        service = new EventIngestionService(translators, failedEventStore, objectMapper);
+        service = new EventIngestionService(rawEventService, translators, failedEventStore, objectMapper);
     }
 
     @Nested
@@ -174,6 +178,41 @@ class EventIngestionServiceTest {
                 assertThat(failed.getEventId()).isEqualTo("evt-1");
                 assertThat(failed.getErrorMessage()).isEqualTo("파싱 실패");
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("process 메서드는")
+    class Describe_process {
+
+        @Test
+        @DisplayName("RawEventService를 호출하고 결과를 반환한다")
+        void it_calls_raw_event_service_and_returns_result() throws Exception {
+            // given
+            String rawBody = """
+                    {
+                        "eventId": "evt-123",
+                        "reservationId": "YNJ-12345678",
+                        "payload": {"roomId": "R-101"}
+                    }
+                    """;
+            EventHeaders headers = new EventHeaders("evt-123", "A", "BOOKING", "corr-456");
+
+            JsonNode payload = objectMapper.readTree("{\"roomId\": \"R-101\"}");
+            IngestRequest ingestRequest = new IngestRequest(
+                    "evt-123", "A", "BOOKING", "corr-456", "YNJ-12345678", payload
+            );
+
+            given(rawEventService.receiveAndStore(rawBody, headers)).willReturn(ingestRequest);
+            given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
+
+            // when
+            IngestionResult result = service.process(rawBody, headers);
+
+            // then
+            assertThat(result.eventId()).isEqualTo("evt-123");
+            assertThat(result.success()).isTrue();
+            then(rawEventService).should().receiveAndStore(rawBody, headers);
         }
     }
 
