@@ -7,6 +7,8 @@ import com.sprint.omnibook.broker.event.PlatformType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
 import com.sprint.omnibook.broker.event.ReservationStatus;
 import com.sprint.omnibook.broker.persistence.RawEventService;
+import com.sprint.omnibook.broker.processing.ProcessingResult;
+import com.sprint.omnibook.broker.processing.ReservationProcessingService;
 import com.sprint.omnibook.broker.translator.PayloadTranslator;
 import com.sprint.omnibook.broker.translator.TranslationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +48,9 @@ class EventIngestionServiceTest {
     @Mock
     private PayloadTranslator yeogieottaeTranslator;
 
+    @Mock
+    private ReservationProcessingService reservationProcessingService;
+
     private FailedEventStore failedEventStore;
     private ObjectMapper objectMapper;
     private EventIngestionService service;
@@ -60,7 +65,13 @@ class EventIngestionServiceTest {
         translators.put(PlatformType.AIRBNB, airbnbTranslator);
         translators.put(PlatformType.YEOGIEOTTAE, yeogieottaeTranslator);
 
-        service = new EventIngestionService(rawEventService, translators, failedEventStore, objectMapper);
+        service = new EventIngestionService(
+                rawEventService,
+                translators,
+                failedEventStore,
+                objectMapper,
+                reservationProcessingService
+        );
     }
 
     @Nested
@@ -95,6 +106,8 @@ class EventIngestionServiceTest {
                 };
 
                 given(expectedTranslator.translate(any(), any())).willReturn(createMockEvent());
+                given(reservationProcessingService.process(any()))
+                        .willReturn(ProcessingResult.success(null, null));
 
                 // when
                 boolean result = service.ingest(request);
@@ -119,6 +132,8 @@ class EventIngestionServiceTest {
                 );
 
                 given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
+                given(reservationProcessingService.process(any()))
+                        .willReturn(ProcessingResult.success(null, null));
 
                 // when
                 service.ingest(request);
@@ -179,6 +194,55 @@ class EventIngestionServiceTest {
                 assertThat(failed.getErrorMessage()).isEqualTo("파싱 실패");
             }
         }
+
+        @Nested
+        @DisplayName("ReservationProcessingService 호출 시")
+        class Context_when_calling_processing_service {
+
+            @Test
+            @DisplayName("처리 성공 시 true를 반환한다")
+            void it_returns_true_on_success() throws Exception {
+                // given
+                JsonNode payload = objectMapper.readTree("{\"test\": true}");
+                IngestRequest request = new IngestRequest(
+                        "evt-1", "A", "BOOKING", "corr-1", "res-1", payload
+                );
+
+                given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
+                given(reservationProcessingService.process(any()))
+                        .willReturn(ProcessingResult.success(null, null));
+
+                // when
+                boolean result = service.ingest(request);
+
+                // then
+                assertThat(result).isTrue();
+                then(reservationProcessingService).should().process(any());
+            }
+
+            @Test
+            @DisplayName("처리 실패 시 false를 반환한다")
+            void it_returns_false_on_failure() throws Exception {
+                // given
+                JsonNode payload = objectMapper.readTree("{\"test\": true}");
+                IngestRequest request = new IngestRequest(
+                        "evt-1", "A", "BOOKING", "corr-1", "res-1", payload
+                );
+
+                given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
+                given(reservationProcessingService.process(any()))
+                        .willReturn(ProcessingResult.failure(
+                                com.sprint.omnibook.broker.processing.FailureReason.UNKNOWN_PROPERTY));
+
+                // when
+                boolean result = service.ingest(request);
+
+                // then
+                assertThat(result).isFalse();
+                // FailedEventStore에는 저장하지 않음 (ReservationEventEntity에 기록됨)
+                assertThat(failedEventStore.count()).isEqualTo(0);
+            }
+        }
     }
 
     @Nested
@@ -205,6 +269,8 @@ class EventIngestionServiceTest {
 
             given(rawEventService.receiveAndStore(rawBody, headers)).willReturn(ingestRequest);
             given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
+            given(reservationProcessingService.process(any()))
+                    .willReturn(ProcessingResult.success(null, null));
 
             // when
             IngestionResult result = service.process(rawBody, headers);

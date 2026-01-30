@@ -6,6 +6,8 @@ import com.sprint.omnibook.broker.event.EventType;
 import com.sprint.omnibook.broker.event.PlatformType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
 import com.sprint.omnibook.broker.persistence.RawEventService;
+import com.sprint.omnibook.broker.processing.ProcessingResult;
+import com.sprint.omnibook.broker.processing.ReservationProcessingService;
 import com.sprint.omnibook.broker.translator.PayloadTranslator;
 import com.sprint.omnibook.broker.translator.TranslationException;
 import org.springframework.stereotype.Service;
@@ -15,7 +17,11 @@ import java.util.Map;
 
 /**
  * 이벤트 수신 및 변환 서비스.
- * MongoDB 저장 → Translator 처리 순서를 보장한다.
+ *
+ * 처리 흐름:
+ * 1. MongoDB 저장 (RawEventService)
+ * 2. ReservationEvent 생성 (Translator)
+ * 3. ReservationProcessingService 호출 (예약/취소 처리)
  */
 @Service
 public class EventIngestionService {
@@ -24,21 +30,24 @@ public class EventIngestionService {
     private final Map<PlatformType, PayloadTranslator> translators;
     private final FailedEventStore failedEventStore;
     private final ObjectMapper objectMapper;
+    private final ReservationProcessingService reservationProcessingService;
 
     public EventIngestionService(
             RawEventService rawEventService,
             Map<PlatformType, PayloadTranslator> translators,
             FailedEventStore failedEventStore,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ReservationProcessingService reservationProcessingService) {
         this.rawEventService = rawEventService;
         this.translators = translators;
         this.failedEventStore = failedEventStore;
         this.objectMapper = objectMapper;
+        this.reservationProcessingService = reservationProcessingService;
     }
 
     /**
      * 이벤트 처리 진입점.
-     * MongoDB 저장 → Translator 처리 순서를 보장한다.
+     * MongoDB 저장 -> Translator 처리 -> 예약 처리 순서를 보장한다.
      *
      * @param rawBody HTTP body 원본
      * @param headers HTTP 헤더 정보
@@ -52,9 +61,9 @@ public class EventIngestionService {
     }
 
     /**
-     * Translator 처리.
+     * Translator 처리 및 예약 처리.
      *
-     * @return 변환 성공 시 true, 실패 시 false (원본 저장됨)
+     * @return 처리 성공 시 true, 실패 시 false
      */
     boolean ingest(IngestRequest request) {
         PlatformType platform = mapPlatform(request.platformHeader());
@@ -78,7 +87,18 @@ public class EventIngestionService {
         }
 
         try {
+            // 1단계: Translator로 정규화된 이벤트 생성
             ReservationEvent event = translator.translate(rawPayload, eventType);
+
+            // 2단계: 예약 처리 서비스 호출
+            ProcessingResult result = reservationProcessingService.process(event);
+
+            if (!result.isSuccess()) {
+                // ReservationProcessingService 내부에서 이미 실패 처리됨
+                // FailedEventStore에는 별도 저장하지 않음 (ReservationEventEntity에 기록됨)
+                return false;
+            }
+
             return true;
         } catch (TranslationException e) {
             saveFailedEvent(request, e.getMessage());
