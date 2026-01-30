@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: omnibook-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  mongo-express:
+    image: mongo-express:1
+    container_name: omnibook-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: omnibook-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: omnibook
+      POSTGRES_USER: omnibook
+      POSTGRES_PASSWORD: omnibook
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  postgres_data:
