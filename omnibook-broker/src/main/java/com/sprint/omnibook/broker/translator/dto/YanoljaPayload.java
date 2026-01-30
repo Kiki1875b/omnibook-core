@@ -21,6 +21,7 @@ public class YanoljaPayload {
     private String roomId;
     private String roomName;
     private String accommodationName;
+    private String accommodationAddress;
 
     private String checkInDate;
     private String checkOutDate;

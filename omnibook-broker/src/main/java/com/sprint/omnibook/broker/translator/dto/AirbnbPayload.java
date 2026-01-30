@@ -20,6 +20,8 @@ public class AirbnbPayload {
 
     private String confirmationCode;
     private String listingId;
+    private String listingName;
+    private String listingAddress;
     private String hostId;
 
     private String checkIn;

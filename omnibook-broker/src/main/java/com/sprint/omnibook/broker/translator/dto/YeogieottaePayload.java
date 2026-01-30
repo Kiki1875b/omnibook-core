@@ -19,6 +19,8 @@ public class YeogieottaePayload {
 
     private String orderId;
     private String accommodationId;
+    private String accommodationName;
+    private String accommodationAddress;
     private String roomTypeId;
     private String roomTypeName;
 

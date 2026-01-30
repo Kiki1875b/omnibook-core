@@ -42,6 +42,12 @@ public class ReservationEvent {
     /** 숙소 ID (정규화) */
     private final String propertyId;
 
+    /** 숙소 이름 */
+    private final String propertyName;
+
+    /** 숙소 주소 */
+    private final String propertyAddress;
+
     // === 일정 ===
 
     /** 체크인 날짜 */
