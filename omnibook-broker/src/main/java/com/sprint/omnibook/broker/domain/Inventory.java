@@ -2,10 +2,8 @@ package com.sprint.omnibook.broker.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,7 +24,6 @@ public class Inventory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
@@ -51,11 +48,16 @@ public class Inventory {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Builder
-    public Inventory(Room room, LocalDate date) {
-        this.room = room;
-        this.date = date;
-        this.status = InventoryStatus.AVAILABLE;
+    /**
+     * 가용 재고 생성 팩토리 메서드.
+     * 새 재고는 항상 AVAILABLE 상태로 시작한다.
+     */
+    public static Inventory createAvailable(Room room, LocalDate date) {
+        Inventory inventory = new Inventory();
+        inventory.room = room;
+        inventory.date = date;
+        inventory.status = InventoryStatus.AVAILABLE;
+        return inventory;
     }
 
     @PrePersist

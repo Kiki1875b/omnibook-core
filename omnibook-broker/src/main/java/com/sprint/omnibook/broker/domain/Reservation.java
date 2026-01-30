@@ -1,12 +1,11 @@
 package com.sprint.omnibook.broker.domain;
 
 import com.sprint.omnibook.broker.event.PlatformType;
+import com.sprint.omnibook.broker.event.ReservationEvent;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -29,7 +28,6 @@ public class Reservation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
@@ -78,21 +76,24 @@ public class Reservation {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Builder
-    public Reservation(PlatformType platformType, String platformReservationId,
-                       LocalDate checkIn, LocalDate checkOut,
-                       String guestName, String guestPhone, String guestEmail,
-                       BigDecimal totalAmount, ReservationStatus status, Instant bookedAt) {
-        this.platformType = platformType;
-        this.platformReservationId = platformReservationId;
-        this.checkIn = checkIn;
-        this.checkOut = checkOut;
-        this.guestName = guestName;
-        this.guestPhone = guestPhone;
-        this.guestEmail = guestEmail;
-        this.totalAmount = totalAmount;
-        this.status = status;
-        this.bookedAt = bookedAt;
+    /**
+     * 예약 생성 팩토리 메서드.
+     * 새 예약은 항상 CONFIRMED 상태로 시작한다.
+     */
+    public static Reservation book(Room room, ReservationEvent event) {
+        Reservation reservation = new Reservation();
+        reservation.room = room;
+        reservation.platformType = event.getPlatformType();
+        reservation.platformReservationId = event.getPlatformReservationId();
+        reservation.checkIn = event.getCheckIn();
+        reservation.checkOut = event.getCheckOut();
+        reservation.guestName = event.getGuestName();
+        reservation.guestPhone = event.getGuestPhone();
+        reservation.guestEmail = event.getGuestEmail();
+        reservation.totalAmount = event.getTotalAmount();
+        reservation.status = ReservationStatus.CONFIRMED;
+        reservation.bookedAt = event.getOccurredAt();
+        return reservation;
     }
 
     @PrePersist

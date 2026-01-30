@@ -98,20 +98,7 @@ public class ReservationProcessingService {
         }
 
         // Reservation 생성
-        Reservation reservation = Reservation.builder()
-                .platformType(event.getPlatformType())
-                .platformReservationId(event.getPlatformReservationId())
-                .checkIn(event.getCheckIn())
-                .checkOut(event.getCheckOut())
-                .guestName(event.getGuestName())
-                .guestPhone(event.getGuestPhone())
-                .guestEmail(event.getGuestEmail())
-                .totalAmount(event.getTotalAmount())
-                .status(ReservationStatus.CONFIRMED)
-                .bookedAt(event.getOccurredAt())
-                .build();
-
-        reservation.setRoom(room);
+        Reservation reservation = Reservation.book(room, event);
         reservationRepository.save(reservation);
 
         // Inventory 예약 처리 (checkIn ~ checkOut-1)
@@ -167,10 +154,7 @@ public class ReservationProcessingService {
             final LocalDate date = current;
             Inventory inventory = inventoryRepository
                     .findByRoomAndDate(room, date)
-                    .orElseGet(() -> Inventory.builder()
-                            .room(room)
-                            .date(date)
-                            .build());
+                    .orElseGet(() -> Inventory.createAvailable(room, date));
 
             inventory.book(reservation);
             inventoryRepository.save(inventory);

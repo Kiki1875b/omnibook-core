@@ -144,16 +144,8 @@ class ReservationProcessingServiceTest {
     }
 
     private Reservation createReservation(Room room) {
-        Reservation reservation = Reservation.builder()
-                .platformType(PlatformType.YANOLJA)
-                .platformReservationId("YNJ-12345")
-                .checkIn(LocalDate.of(2025, 3, 1))
-                .checkOut(LocalDate.of(2025, 3, 3))
-                .guestName("홍길동")
-                .status(ReservationStatus.CONFIRMED)
-                .build();
-        reservation.setRoom(room);
-        return reservation;
+        ReservationEvent event = createBookingEvent();
+        return Reservation.book(room, event);
     }
 
     // === 테스트 케이스 ===
@@ -264,10 +256,7 @@ class ReservationProcessingServiceTest {
                     PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
 
-                    Inventory existingInventory = Inventory.builder()
-                            .room(room)
-                            .date(LocalDate.of(2025, 3, 1))
-                            .build();
+                    Inventory existingInventory = Inventory.createAvailable(room, LocalDate.of(2025, 3, 1));
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
@@ -389,10 +378,7 @@ class ReservationProcessingServiceTest {
                     PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
 
-                    Inventory bookedInventory = Inventory.builder()
-                            .room(room)
-                            .date(LocalDate.of(2025, 3, 1))
-                            .build();
+                    Inventory bookedInventory = Inventory.createAvailable(room, LocalDate.of(2025, 3, 1));
                     bookedInventory.book(null); // BOOKED 상태로 변경
 
                     given(reservationEventRepository.save(any()))
@@ -436,16 +422,10 @@ class ReservationProcessingServiceTest {
                     PlatformListing platformListing = createPlatformListing(room);
                     Reservation existingReservation = createReservation(room);
 
-                    Inventory inventory1 = Inventory.builder()
-                            .room(room)
-                            .date(LocalDate.of(2025, 3, 1))
-                            .build();
+                    Inventory inventory1 = Inventory.createAvailable(room, LocalDate.of(2025, 3, 1));
                     inventory1.book(existingReservation);
 
-                    Inventory inventory2 = Inventory.builder()
-                            .room(room)
-                            .date(LocalDate.of(2025, 3, 2))
-                            .build();
+                    Inventory inventory2 = Inventory.createAvailable(room, LocalDate.of(2025, 3, 2));
                     inventory2.book(existingReservation);
 
                     given(reservationEventRepository.save(any()))
