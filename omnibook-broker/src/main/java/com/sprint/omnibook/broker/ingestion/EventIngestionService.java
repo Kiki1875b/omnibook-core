@@ -10,6 +10,7 @@ import com.sprint.omnibook.broker.processing.ProcessingResult;
 import com.sprint.omnibook.broker.processing.ReservationProcessingService;
 import com.sprint.omnibook.broker.translator.PayloadTranslator;
 import com.sprint.omnibook.broker.translator.TranslationException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,6 +25,7 @@ import java.util.Map;
  * 3. ReservationProcessingService 호출 (예약/취소 처리)
  */
 @Service
+@RequiredArgsConstructor
 public class EventIngestionService {
 
     private final RawEventService rawEventService;
@@ -31,19 +33,6 @@ public class EventIngestionService {
     private final FailedEventStore failedEventStore;
     private final ObjectMapper objectMapper;
     private final ReservationProcessingService reservationProcessingService;
-
-    public EventIngestionService(
-            RawEventService rawEventService,
-            Map<PlatformType, PayloadTranslator> translators,
-            FailedEventStore failedEventStore,
-            ObjectMapper objectMapper,
-            ReservationProcessingService reservationProcessingService) {
-        this.rawEventService = rawEventService;
-        this.translators = translators;
-        this.failedEventStore = failedEventStore;
-        this.objectMapper = objectMapper;
-        this.reservationProcessingService = reservationProcessingService;
-    }
 
     /**
      * 이벤트 처리 진입점.

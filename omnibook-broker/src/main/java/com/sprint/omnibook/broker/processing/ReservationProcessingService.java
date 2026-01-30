@@ -4,6 +4,7 @@ import com.sprint.omnibook.broker.domain.*;
 import com.sprint.omnibook.broker.domain.repository.*;
 import com.sprint.omnibook.broker.event.EventType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.Optional;
  * 5. ReservationEventEntity markProcessed/markFailed
  */
 @Service
+@RequiredArgsConstructor
 public class ReservationProcessingService {
 
     private final ReservationEventRepository reservationEventRepository;
@@ -30,19 +32,6 @@ public class ReservationProcessingService {
     private final PlatformListingRepository platformListingRepository;
     private final InventoryRepository inventoryRepository;
     private final ReservationRepository reservationRepository;
-
-    public ReservationProcessingService(
-            ReservationEventRepository reservationEventRepository,
-            PlatformPropertyRepository platformPropertyRepository,
-            PlatformListingRepository platformListingRepository,
-            InventoryRepository inventoryRepository,
-            ReservationRepository reservationRepository) {
-        this.reservationEventRepository = reservationEventRepository;
-        this.platformPropertyRepository = platformPropertyRepository;
-        this.platformListingRepository = platformListingRepository;
-        this.inventoryRepository = inventoryRepository;
-        this.reservationRepository = reservationRepository;
-    }
 
     /**
      * 이벤트 처리.
@@ -121,6 +110,7 @@ public class ReservationProcessingService {
                 .status(ReservationStatus.CONFIRMED)
                 .bookedAt(event.getOccurredAt())
                 .build();
+
         reservation.setRoom(room);
         reservationRepository.save(reservation);
 

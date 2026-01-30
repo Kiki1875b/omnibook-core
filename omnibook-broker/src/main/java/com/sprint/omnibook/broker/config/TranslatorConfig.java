@@ -5,6 +5,7 @@ import com.sprint.omnibook.broker.translator.AirbnbTranslator;
 import com.sprint.omnibook.broker.translator.PayloadTranslator;
 import com.sprint.omnibook.broker.translator.YanoljaTranslator;
 import com.sprint.omnibook.broker.translator.YeogieottaeTranslator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,14 +17,15 @@ import java.util.Map;
  * 각 Translator는 @Component로 등록되어 있으며, 여기서는 Map으로 묶어서 제공한다.
  */
 @Configuration
+@RequiredArgsConstructor
 public class TranslatorConfig {
 
-    @Bean
-    public Map<PlatformType, PayloadTranslator> translators(
-            YanoljaTranslator yanoljaTranslator,
-            AirbnbTranslator airbnbTranslator,
-            YeogieottaeTranslator yeogieottaeTranslator) {
+    private final YanoljaTranslator yanoljaTranslator;
+    private final AirbnbTranslator airbnbTranslator;
+    private final YeogieottaeTranslator yeogieottaeTranslator;
 
+    @Bean
+    public Map<PlatformType, PayloadTranslator> translators() {
         Map<PlatformType, PayloadTranslator> map = new EnumMap<>(PlatformType.class);
         map.put(PlatformType.YANOLJA, yanoljaTranslator);
         map.put(PlatformType.AIRBNB, airbnbTranslator);
