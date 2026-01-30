@@ -12,9 +12,4 @@ public interface PlatformListingRepository extends JpaRepository<PlatformListing
      * OTA 플랫폼과 플랫폼 방 ID로 매핑 조회.
      */
     Optional<PlatformListing> findByPlatformTypeAndPlatformRoomId(PlatformType platformType, String platformRoomId);
-
-    /**
-     * OTA 플랫폼과 플랫폼 숙소 ID로 매핑 조회.
-     */
-    Optional<PlatformListing> findByPlatformTypeAndPlatformPropertyId(PlatformType platformType, String platformPropertyId);
 }

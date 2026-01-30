@@ -25,13 +25,25 @@ CREATE TABLE IF NOT EXISTS room (
 
 CREATE INDEX IF NOT EXISTS idx_room_property_id ON room(property_id);
 
--- OTA 플랫폼 매핑
+-- OTA 플랫폼 숙소 매핑
+CREATE TABLE IF NOT EXISTS platform_property (
+    id                      BIGSERIAL PRIMARY KEY,
+    property_id             BIGINT NOT NULL REFERENCES property(id),
+    platform_type           VARCHAR(50) NOT NULL,
+    platform_property_id    VARCHAR(255) NOT NULL,
+    platform_property_name  VARCHAR(255),
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (platform_type, platform_property_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_platform_property_lookup ON platform_property(platform_type, platform_property_id);
+
+-- OTA 플랫폼 방 매핑
 CREATE TABLE IF NOT EXISTS platform_listing (
     id                      BIGSERIAL PRIMARY KEY,
     room_id                 BIGINT NOT NULL REFERENCES room(id),
     platform_type           VARCHAR(50) NOT NULL,
     platform_room_id        VARCHAR(255) NOT NULL,
-    platform_property_id    VARCHAR(255),
     is_active               BOOLEAN NOT NULL DEFAULT TRUE,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),

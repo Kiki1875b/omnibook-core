@@ -39,9 +39,6 @@ public class PlatformListing {
     @Column(name = "platform_room_id", nullable = false)
     private String platformRoomId;
 
-    @Column(name = "platform_property_id")
-    private String platformPropertyId;
-
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
@@ -52,10 +49,9 @@ public class PlatformListing {
     private Instant updatedAt;
 
     @Builder
-    public PlatformListing(PlatformType platformType, String platformRoomId, String platformPropertyId) {
+    public PlatformListing(PlatformType platformType, String platformRoomId) {
         this.platformType = platformType;
         this.platformRoomId = platformRoomId;
-        this.platformPropertyId = platformPropertyId;
     }
 
     @PrePersist
