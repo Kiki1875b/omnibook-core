@@ -2,8 +2,24 @@
 -- omnibook-broker PostgreSQL Schema
 -- =====================================================
 
+-- =====================================================
+-- 테이블 삭제 (개발 환경: 매 실행 시 재생성)
+-- FK 의존성 역순으로 삭제
+-- =====================================================
+DROP TABLE IF EXISTS failed_event CASCADE;
+DROP TABLE IF EXISTS reservation_event CASCADE;
+DROP TABLE IF EXISTS inventory CASCADE;
+DROP TABLE IF EXISTS reservation CASCADE;
+DROP TABLE IF EXISTS platform_listing CASCADE;
+DROP TABLE IF EXISTS room CASCADE;
+DROP TABLE IF EXISTS property CASCADE;
+
+-- =====================================================
+-- 테이블 생성
+-- =====================================================
+
 -- 숙소
-CREATE TABLE IF NOT EXISTS property (
+CREATE TABLE property (
     id              BIGSERIAL PRIMARY KEY,
     name            VARCHAR(255) NOT NULL,
     address         VARCHAR(500),
@@ -12,7 +28,7 @@ CREATE TABLE IF NOT EXISTS property (
 );
 
 -- 방
-CREATE TABLE IF NOT EXISTS room (
+CREATE TABLE room (
     id              BIGSERIAL PRIMARY KEY,
     property_id     BIGINT NOT NULL REFERENCES property(id),
     name            VARCHAR(255) NOT NULL,
@@ -23,23 +39,10 @@ CREATE TABLE IF NOT EXISTS room (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_room_property_id ON room(property_id);
-
--- OTA 플랫폼 숙소 매핑
-CREATE TABLE IF NOT EXISTS platform_property (
-    id                      BIGSERIAL PRIMARY KEY,
-    property_id             BIGINT NOT NULL REFERENCES property(id),
-    platform_type           VARCHAR(50) NOT NULL,
-    platform_property_id    VARCHAR(255) NOT NULL,
-    platform_property_name  VARCHAR(255),
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (platform_type, platform_property_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_platform_property_lookup ON platform_property(platform_type, platform_property_id);
+CREATE INDEX idx_room_property_id ON room(property_id);
 
 -- OTA 플랫폼 방 매핑
-CREATE TABLE IF NOT EXISTS platform_listing (
+CREATE TABLE platform_listing (
     id                      BIGSERIAL PRIMARY KEY,
     room_id                 BIGINT NOT NULL REFERENCES room(id),
     platform_type           VARCHAR(50) NOT NULL,
@@ -51,11 +54,11 @@ CREATE TABLE IF NOT EXISTS platform_listing (
     UNIQUE (platform_type, platform_room_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_platform_listing_room_id ON platform_listing(room_id);
-CREATE INDEX IF NOT EXISTS idx_platform_listing_lookup ON platform_listing(platform_type, platform_room_id);
+CREATE INDEX idx_platform_listing_room_id ON platform_listing(room_id);
+CREATE INDEX idx_platform_listing_lookup ON platform_listing(platform_type, platform_room_id);
 
 -- 예약
-CREATE TABLE IF NOT EXISTS reservation (
+CREATE TABLE reservation (
     id                          BIGSERIAL PRIMARY KEY,
     room_id                     BIGINT NOT NULL REFERENCES room(id),
     platform_type               VARCHAR(50) NOT NULL,
@@ -73,12 +76,12 @@ CREATE TABLE IF NOT EXISTS reservation (
     UNIQUE (platform_type, platform_reservation_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_reservation_room_id ON reservation(room_id);
-CREATE INDEX IF NOT EXISTS idx_reservation_status ON reservation(status);
-CREATE INDEX IF NOT EXISTS idx_reservation_dates ON reservation(room_id, check_in, check_out);
+CREATE INDEX idx_reservation_room_id ON reservation(room_id);
+CREATE INDEX idx_reservation_status ON reservation(status);
+CREATE INDEX idx_reservation_dates ON reservation(room_id, check_in, check_out);
 
 -- 날짜별 재고
-CREATE TABLE IF NOT EXISTS inventory (
+CREATE TABLE inventory (
     id              BIGSERIAL PRIMARY KEY,
     room_id         BIGINT NOT NULL REFERENCES room(id),
     date            DATE NOT NULL,
@@ -90,11 +93,11 @@ CREATE TABLE IF NOT EXISTS inventory (
     UNIQUE (room_id, date)
 );
 
-CREATE INDEX IF NOT EXISTS idx_inventory_room_date ON inventory(room_id, date);
-CREATE INDEX IF NOT EXISTS idx_inventory_status ON inventory(status);
+CREATE INDEX idx_inventory_room_date ON inventory(room_id, date);
+CREATE INDEX idx_inventory_status ON inventory(status);
 
 -- 정규화된 이벤트
-CREATE TABLE IF NOT EXISTS reservation_event (
+CREATE TABLE reservation_event (
     id                          BIGSERIAL PRIMARY KEY,
     event_id                    UUID NOT NULL UNIQUE,
     platform_type               VARCHAR(50) NOT NULL,
@@ -119,12 +122,12 @@ CREATE TABLE IF NOT EXISTS reservation_event (
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_reservation_event_platform ON reservation_event(platform_type, platform_reservation_id);
-CREATE INDEX IF NOT EXISTS idx_reservation_event_processed ON reservation_event(processed);
-CREATE INDEX IF NOT EXISTS idx_reservation_event_received ON reservation_event(received_at);
+CREATE INDEX idx_reservation_event_platform ON reservation_event(platform_type, platform_reservation_id);
+CREATE INDEX idx_reservation_event_processed ON reservation_event(processed);
+CREATE INDEX idx_reservation_event_received ON reservation_event(received_at);
 
 -- 실패 이벤트 (재처리용)
-CREATE TABLE IF NOT EXISTS failed_event (
+CREATE TABLE failed_event (
     id              BIGSERIAL PRIMARY KEY,
     event_id        VARCHAR(255) NOT NULL,
     platform        VARCHAR(50) NOT NULL,
@@ -139,5 +142,5 @@ CREATE TABLE IF NOT EXISTS failed_event (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_failed_event_resolved ON failed_event(resolved);
-CREATE INDEX IF NOT EXISTS idx_failed_event_platform ON failed_event(platform);
+CREATE INDEX idx_failed_event_resolved ON failed_event(resolved);
+CREATE INDEX idx_failed_event_platform ON failed_event(platform);
