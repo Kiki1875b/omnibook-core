@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,7 +23,6 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "property_id", nullable = false)
     private Property property;
@@ -73,6 +71,13 @@ public class Room {
 
     public void addPlatformListing(PlatformListing listing) {
         platformListings.add(listing);
-        listing.setRoom(this);
+        listing.assignRoom(this);
+    }
+
+    /**
+     * 방을 숙소에 연결한다. (내부 사용 전용)
+     */
+    void assignProperty(Property property) {
+        this.property = property;
     }
 }

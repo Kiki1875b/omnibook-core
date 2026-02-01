@@ -56,6 +56,6 @@ public class Property {
 
     public void addRoom(Room room) {
         rooms.add(room);
-        room.setProperty(this);
+        room.assignProperty(this);
     }
 }

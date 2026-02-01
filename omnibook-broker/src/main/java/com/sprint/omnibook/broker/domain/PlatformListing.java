@@ -6,7 +6,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 
@@ -27,7 +26,6 @@ public class PlatformListing {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
@@ -71,5 +69,12 @@ public class PlatformListing {
 
     public void activate() {
         this.active = true;
+    }
+
+    /**
+     * 플랫폼 리스팅을 방에 연결한다. (내부 사용 전용)
+     */
+    void assignRoom(Room room) {
+        this.room = room;
     }
 }
