@@ -18,17 +18,15 @@ import java.util.Optional;
  *
  * 처리 흐름:
  * 1. ReservationEventEntity 저장 (감사용)
- * 2. PlatformProperty 조회
- * 3. PlatformListing 조회 -> Room 확보
- * 4. 이벤트 타입에 따른 분기 처리
- * 5. ReservationEventEntity markProcessed/markFailed
+ * 2. PlatformListing 조회 -> Room 확보
+ * 3. 이벤트 타입에 따른 분기 처리
+ * 4. ReservationEventEntity markProcessed/markFailed
  */
 @Service
 @RequiredArgsConstructor
 public class ReservationProcessingService {
 
     private final ReservationEventRepository reservationEventRepository;
-    private final PlatformPropertyRepository platformPropertyRepository;
     private final PlatformListingRepository platformListingRepository;
     private final InventoryRepository inventoryRepository;
     private final ReservationRepository reservationRepository;
@@ -45,18 +43,7 @@ public class ReservationProcessingService {
         ReservationEventEntity eventEntity = createEventEntity(event);
         reservationEventRepository.save(eventEntity);
 
-        // 2. PlatformProperty 조회
-        Optional<PlatformProperty> platformPropertyOpt = platformPropertyRepository
-                .findByPlatformTypeAndPlatformPropertyId(
-                        event.getPlatformType(),
-                        event.getPropertyId()
-                );
-
-        if (platformPropertyOpt.isEmpty()) {
-            return handleFailure(eventEntity, FailureReason.UNKNOWN_PROPERTY);
-        }
-
-        // 3. PlatformListing 조회 -> Room 확보
+        // 2. PlatformListing 조회 -> Room 확보
         Optional<PlatformListing> platformListingOpt = platformListingRepository
                 .findByPlatformTypeAndPlatformRoomId(
                         event.getPlatformType(),
@@ -69,7 +56,7 @@ public class ReservationProcessingService {
 
         Room room = platformListingOpt.get().getRoom();
 
-        // 4. 이벤트 타입에 따른 분기 처리
+        // 3. 이벤트 타입에 따른 분기 처리
         if (event.getEventType() == EventType.BOOKING) {
             return processBooking(event, eventEntity, room);
         } else {
@@ -94,7 +81,7 @@ public class ReservationProcessingService {
         );
 
         if (!unavailable.isEmpty()) {
-            return handleFailure(eventEntity, FailureReason.NOT_AVAILABLE);
+            return handleFailure(eventEntity, FailureReason.ROOM_ALREADY_BOOKED);
         }
 
         // Reservation 생성
@@ -154,7 +141,7 @@ public class ReservationProcessingService {
             final LocalDate date = current;
             Inventory inventory = inventoryRepository
                     .findByRoomAndDate(room, date)
-                    .orElseGet(() -> Inventory.createAvailable(room, date));
+                    .orElseGet(() -> Inventory.createBooked(room, date));
 
             inventory.book(reservation);
             inventoryRepository.save(inventory);

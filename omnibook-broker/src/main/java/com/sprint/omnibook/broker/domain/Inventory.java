@@ -52,11 +52,11 @@ public class Inventory {
      * 가용 재고 생성 팩토리 메서드.
      * 새 재고는 항상 AVAILABLE 상태로 시작한다.
      */
-    public static Inventory createAvailable(Room room, LocalDate date) {
+    public static Inventory createBooked(Room room, LocalDate date) {
         Inventory inventory = new Inventory();
         inventory.room = room;
         inventory.date = date;
-        inventory.status = InventoryStatus.AVAILABLE;
+        inventory.status = InventoryStatus.BOOKED;
         return inventory;
     }
 
