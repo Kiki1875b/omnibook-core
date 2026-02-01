@@ -49,8 +49,8 @@ public class Inventory {
     private Instant updatedAt;
 
     /**
-     * 가용 재고 생성 팩토리 메서드.
-     * 새 재고는 항상 AVAILABLE 상태로 시작한다.
+     * 예약된 재고 생성 팩토리 메서드.
+     * 새 재고는 BOOKED 상태로 시작한다.
      */
     public static Inventory createBooked(Room room, LocalDate date) {
         Inventory inventory = new Inventory();
