@@ -31,9 +31,6 @@ public class Property {
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL)
     private List<Room> rooms = new ArrayList<>();
 
-    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL)
-    private List<PlatformProperty> platformProperties = new ArrayList<>();
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
