@@ -2,6 +2,7 @@ package com.sprint.omnibook.broker.ingestion;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.omnibook.broker.api.dto.IncomingEventRequest;
 import com.sprint.omnibook.broker.event.EventType;
 import com.sprint.omnibook.broker.event.PlatformType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
@@ -15,14 +16,16 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 이벤트 수신 및 변환 서비스.
  *
  * 처리 흐름:
- * 1. MongoDB 저장 (RawEventService)
- * 2. ReservationEvent 생성 (Translator)
- * 3. ReservationProcessingService 호출 (예약/취소 처리)
+ * 1. MongoDB 저장 (RawEventService) - 파싱 없이 즉시 저장
+ * 2. 파싱 및 IngestRequest 생성
+ * 3. ReservationEvent 생성 (Translator)
+ * 4. ReservationProcessingService 호출 (예약/취소 처리)
  */
 @Service
 @RequiredArgsConstructor
@@ -36,17 +39,67 @@ public class EventIngestionService {
 
     /**
      * 이벤트 처리 진입점.
-     * MongoDB 저장 -> Translator 처리 -> 예약 처리 순서를 보장한다.
+     * MongoDB 저장 -> 파싱 -> Translator 처리 -> 예약 처리 순서를 보장한다.
      *
      * @param rawBody HTTP body 원본
      * @param headers HTTP 헤더 정보
      * @return 처리 결과
      */
-    public IngestionResult process(String rawBody, EventHeaders headers) throws JsonProcessingException {
-        IngestRequest request = rawEventService.receiveAndStore(rawBody, headers);
-        boolean success = ingest(request);
+    public IngestionResult process(String rawBody, EventHeaders headers) {
+        // 1. 즉시 MongoDB 저장 (파싱 실패와 무관하게 원본 보존)
+        rawEventService.store(rawBody, headers);
 
+        // 2. 파싱 및 IngestRequest 생성
+        IngestRequest request;
+        try {
+            request = parseToIngestRequest(rawBody, headers);
+        } catch (JsonProcessingException e) {
+            String eventId = resolveEventId(headers.eventId(), null);
+            saveFailedEventForParseError(eventId, headers, rawBody, e.getMessage());
+            return new IngestionResult(eventId, false);
+        }
+
+        // 3. 비즈니스 처리
+        boolean success = ingest(request);
         return new IngestionResult(request.eventId(), success);
+    }
+
+    private IngestRequest parseToIngestRequest(String rawBody, EventHeaders headers) throws JsonProcessingException {
+        IncomingEventRequest request = objectMapper.readValue(rawBody, IncomingEventRequest.class);
+        String eventId = resolveEventId(headers.eventId(), request.getEventId());
+
+        return new IngestRequest(
+                eventId,
+                headers.platform(),
+                headers.eventType(),
+                headers.correlationId(),
+                request.getReservationId(),
+                request.getPayload()
+        );
+    }
+
+    private String resolveEventId(String headerEventId, String bodyEventId) {
+        if (headerEventId != null && !headerEventId.isBlank()) {
+            return headerEventId;
+        }
+        if (bodyEventId != null && !bodyEventId.isBlank()) {
+            return bodyEventId;
+        }
+        return UUID.randomUUID().toString();
+    }
+
+    private void saveFailedEventForParseError(String eventId, EventHeaders headers, String rawBody, String errorMessage) {
+        FailedEvent failed = FailedEvent.builder()
+                .eventId(eventId)
+                .platform(headers.platform())
+                .eventType(headers.eventType())
+                .correlationId(headers.correlationId())
+                .rawPayload(rawBody)
+                .errorMessage("JSON 파싱 실패: " + errorMessage)
+                .failedAt(Instant.now())
+                .build();
+
+        failedEventStore.save(failed);
     }
 
     /**
