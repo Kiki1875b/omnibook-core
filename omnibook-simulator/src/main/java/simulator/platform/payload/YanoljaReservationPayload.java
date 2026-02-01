@@ -12,6 +12,7 @@ public class YanoljaReservationPayload {
     private String roomId;
     private String roomName;
     private String accommodationName;
+    private String accommodationAddress;
 
     private String checkInDate;         // yyyy-MM-dd
     private String checkOutDate;        // yyyy-MM-dd
