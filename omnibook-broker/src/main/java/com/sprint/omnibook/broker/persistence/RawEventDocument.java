@@ -10,6 +10,7 @@ import java.time.Instant;
 /**
  * 원본 이벤트 저장용 MongoDB Document.
  * Append-only SoT로 동작하며, 업데이트 연산을 허용하지 않는다.
+ * MongoDB ObjectId가 유일 식별자 역할을 한다.
  */
 @Getter
 @Builder
@@ -18,8 +19,6 @@ public class RawEventDocument {
 
     @Id
     private ObjectId id;
-
-    private String eventId;
 
     private String platform;
 
