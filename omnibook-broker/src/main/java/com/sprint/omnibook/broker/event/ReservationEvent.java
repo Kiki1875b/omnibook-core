@@ -39,10 +39,7 @@ public class ReservationEvent {
     /** 객실 ID (정규화) */
     private final String roomId;
 
-    /** 숙소 ID (정규화) */
-    private final String propertyId;
-
-    /** 숙소 이름 */
+    /** 숙소 이름 (감사용) */
     private final String propertyName;
 
     /** 숙소 주소 */
