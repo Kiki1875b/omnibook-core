@@ -75,7 +75,7 @@ class YanoljaTranslatorTest {
                         .platformReservationId("YNJ-12345678")
                         .eventType(EventType.BOOKING)
                         .roomId("R-101")
-                        .propertyId("서울 호텔")
+                        .propertyName("서울 호텔")
                         .checkIn(LocalDate.of(2025, 8, 15))
                         .checkOut(LocalDate.of(2025, 8, 18))
                         .guestName("김민수")

@@ -62,7 +62,7 @@ class ReservationEventMapperTest {
             assertThat(result.getPlatformReservationId()).isEqualTo("YNJ-12345678");
             assertThat(result.getEventType()).isEqualTo(EventType.BOOKING);
             assertThat(result.getRoomId()).isEqualTo("R-101");
-            assertThat(result.getPropertyId()).isEqualTo("서울 호텔");
+            assertThat(result.getPropertyName()).isEqualTo("서울 호텔");
             assertThat(result.getCheckIn()).isEqualTo(LocalDate.of(2025, 8, 15));
             assertThat(result.getCheckOut()).isEqualTo(LocalDate.of(2025, 8, 18));
             assertThat(result.getGuestName()).isEqualTo("김민수");
@@ -121,6 +121,7 @@ class ReservationEventMapperTest {
             payload.setConfirmationCode("ABC123XYZW");
             payload.setListingId("listing-001");
             payload.setHostId("host-999");
+            payload.setListingName("Seoul Apartment");
             payload.setCheckIn("2025-08-15");
             payload.setCheckOut("2025-08-18");
             payload.setGuestFirstName("Minsu");
@@ -139,7 +140,7 @@ class ReservationEventMapperTest {
             assertThat(result.getPlatformType()).isEqualTo(PlatformType.AIRBNB);
             assertThat(result.getPlatformReservationId()).isEqualTo("ABC123XYZW");
             assertThat(result.getRoomId()).isEqualTo("listing-001");
-            assertThat(result.getPropertyId()).isEqualTo("host-999");
+            assertThat(result.getPropertyName()).isEqualTo("Seoul Apartment");
             assertThat(result.getGuestName()).isEqualTo("Minsu Kim");
             assertThat(result.getGuestPhone()).isNull();
             assertThat(result.getGuestEmail()).isEqualTo("minsu@example.com");
@@ -211,6 +212,7 @@ class ReservationEventMapperTest {
             YeogieottaePayload payload = new YeogieottaePayload();
             payload.setOrderId("YEO-12345678");
             payload.setAccommodationId("ACC-001");
+            payload.setAccommodationName("제주 리조트");
             payload.setRoomTypeId("RT-101");
             payload.setStartDate("20250815");
             payload.setEndDate("20250818");
@@ -229,7 +231,7 @@ class ReservationEventMapperTest {
             assertThat(result.getPlatformType()).isEqualTo(PlatformType.YEOGIEOTTAE);
             assertThat(result.getPlatformReservationId()).isEqualTo("YEO-12345678");
             assertThat(result.getRoomId()).isEqualTo("RT-101");
-            assertThat(result.getPropertyId()).isEqualTo("ACC-001");
+            assertThat(result.getPropertyName()).isEqualTo("제주 리조트");
             assertThat(result.getCheckIn()).isEqualTo(LocalDate.of(2025, 8, 15));
             assertThat(result.getCheckOut()).isEqualTo(LocalDate.of(2025, 8, 18));
             assertThat(result.getGuestName()).isEqualTo("김민수");

@@ -232,7 +232,7 @@ class EventIngestionServiceTest {
                 given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
                 given(reservationProcessingService.process(any()))
                         .willReturn(ProcessingResult.failure(
-                                com.sprint.omnibook.broker.processing.FailureReason.UNKNOWN_PROPERTY));
+                                com.sprint.omnibook.broker.processing.FailureReason.UNKNOWN_ROOM));
 
                 // when
                 boolean result = service.ingest(request);
@@ -250,7 +250,7 @@ class EventIngestionServiceTest {
     class Describe_process {
 
         @Test
-        @DisplayName("RawEventService를 호출하고 결과를 반환한다")
+        @DisplayName("RawEventService.store를 호출하고 결과를 반환한다")
         void it_calls_raw_event_service_and_returns_result() throws Exception {
             // given
             String rawBody = """
@@ -262,12 +262,6 @@ class EventIngestionServiceTest {
                     """;
             EventHeaders headers = new EventHeaders("evt-123", "A", "BOOKING", "corr-456");
 
-            JsonNode payload = objectMapper.readTree("{\"roomId\": \"R-101\"}");
-            IngestRequest ingestRequest = new IngestRequest(
-                    "evt-123", "A", "BOOKING", "corr-456", "YNJ-12345678", payload
-            );
-
-            given(rawEventService.receiveAndStore(rawBody, headers)).willReturn(ingestRequest);
             given(yanoljaTranslator.translate(any(), any())).willReturn(createMockEvent());
             given(reservationProcessingService.process(any()))
                     .willReturn(ProcessingResult.success(null, null));
@@ -278,7 +272,25 @@ class EventIngestionServiceTest {
             // then
             assertThat(result.eventId()).isEqualTo("evt-123");
             assertThat(result.success()).isTrue();
-            then(rawEventService).should().receiveAndStore(rawBody, headers);
+            then(rawEventService).should().store(rawBody, headers);
+        }
+
+        @Test
+        @DisplayName("파싱 실패 시에도 원본을 저장하고 실패를 반환한다")
+        void it_stores_raw_event_even_when_parsing_fails() {
+            // given
+            String invalidRawBody = "{ invalid json }}}";
+            EventHeaders headers = new EventHeaders("evt-123", "A", "BOOKING", "corr-456");
+
+            // when
+            IngestionResult result = service.process(invalidRawBody, headers);
+
+            // then
+            assertThat(result.success()).isFalse();
+            then(rawEventService).should().store(invalidRawBody, headers);
+            assertThat(failedEventStore.count()).isEqualTo(1);
+            assertThat(failedEventStore.findAll().get(0).getErrorMessage())
+                    .contains("JSON 파싱 실패");
         }
     }
 

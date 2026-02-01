@@ -31,11 +31,10 @@ import static org.mockito.Mockito.*;
  *
  * 테스트 시나리오:
  * 1. BOOKING 성공 - 모든 날짜 가용
- * 2. BOOKING 실패 - UNKNOWN_PROPERTY
- * 3. BOOKING 실패 - UNKNOWN_ROOM
- * 4. BOOKING 실패 - NOT_AVAILABLE
- * 5. CANCELLATION 성공 - 기존 예약 있음
- * 6. CANCELLATION Silent Success - 예약 없음
+ * 2. BOOKING 실패 - UNKNOWN_ROOM
+ * 3. BOOKING 실패 - NOT_AVAILABLE
+ * 4. CANCELLATION 성공 - 기존 예약 있음
+ * 5. CANCELLATION Silent Success - 예약 없음
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ReservationProcessingService")
@@ -43,9 +42,6 @@ class ReservationProcessingServiceTest {
 
     @Mock
     private ReservationEventRepository reservationEventRepository;
-
-    @Mock
-    private PlatformPropertyRepository platformPropertyRepository;
 
     @Mock
     private PlatformListingRepository platformListingRepository;
@@ -62,7 +58,6 @@ class ReservationProcessingServiceTest {
     void setUp() {
         service = new ReservationProcessingService(
                 reservationEventRepository,
-                platformPropertyRepository,
                 platformListingRepository,
                 inventoryRepository,
                 reservationRepository
@@ -77,7 +72,6 @@ class ReservationProcessingServiceTest {
                 .platformType(PlatformType.YANOLJA)
                 .platformReservationId("YNJ-12345")
                 .eventType(EventType.BOOKING)
-                .propertyId("PROP-001")
                 .roomId("ROOM-001")
                 .propertyName("테스트 숙소")
                 .propertyAddress("서울시 강남구")
@@ -99,7 +93,6 @@ class ReservationProcessingServiceTest {
                 .platformType(PlatformType.YANOLJA)
                 .platformReservationId("YNJ-12345")
                 .eventType(EventType.CANCELLATION)
-                .propertyId("PROP-001")
                 .roomId("ROOM-001")
                 .checkIn(LocalDate.of(2025, 3, 1))
                 .checkOut(LocalDate.of(2025, 3, 3))
@@ -123,15 +116,6 @@ class ReservationProcessingServiceTest {
                 .build();
         room.setProperty(property);
         return room;
-    }
-
-    private PlatformProperty createPlatformProperty(Property property) {
-        return PlatformProperty.builder()
-                .property(property)
-                .platformType(PlatformType.YANOLJA)
-                .platformPropertyId("PROP-001")
-                .platformPropertyName("야놀자 테스트 숙소")
-                .build();
     }
 
     private PlatformListing createPlatformListing(Room room) {
@@ -164,8 +148,8 @@ class ReservationProcessingServiceTest {
                 // given
                 ReservationEvent event = createBookingEvent();
 
-                // platformProperty가 없어서 실패하더라도 이벤트는 저장되어야 함
-                given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
+                // platformListing이 없어서 실패하더라도 이벤트는 저장되어야 함
+                given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                         .willReturn(Optional.empty());
                 given(reservationEventRepository.save(any()))
                         .willAnswer(inv -> inv.getArgument(0));
@@ -201,14 +185,10 @@ class ReservationProcessingServiceTest {
                     ReservationEvent event = createBookingEvent();
                     Property property = createProperty();
                     Room room = createRoom(property);
-                    PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(
-                            PlatformType.YANOLJA, "PROP-001"))
-                            .willReturn(Optional.of(platformProperty));
                     given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(
                             PlatformType.YANOLJA, "ROOM-001"))
                             .willReturn(Optional.of(platformListing));
@@ -253,15 +233,12 @@ class ReservationProcessingServiceTest {
                     ReservationEvent event = createBookingEvent();
                     Property property = createProperty();
                     Room room = createRoom(property);
-                    PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
 
-                    Inventory existingInventory = Inventory.createAvailable(room, LocalDate.of(2025, 3, 1));
+                    Inventory existingInventory = Inventory.createBooked(room, LocalDate.of(2025, 3, 1));
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
-                            .willReturn(Optional.of(platformProperty));
                     given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                             .willReturn(Optional.of(platformListing));
                     given(inventoryRepository.findUnavailableByRoomAndDateRange(any(), any(), any(), any()))
@@ -286,18 +263,18 @@ class ReservationProcessingServiceTest {
             }
 
             @Nested
-            @DisplayName("PlatformProperty가 없으면")
-            class Context_when_platform_property_not_found {
+            @DisplayName("PlatformListing이 없으면")
+            class Context_when_platform_listing_not_found {
 
                 @Test
-                @DisplayName("UNKNOWN_PROPERTY 실패를 반환한다")
-                void it_returns_unknown_property_failure() {
+                @DisplayName("UNKNOWN_ROOM 실패를 반환한다")
+                void it_returns_unknown_room_failure() {
                     // given
                     ReservationEvent event = createBookingEvent();
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
+                    given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                             .willReturn(Optional.empty());
 
                     // when
@@ -305,7 +282,7 @@ class ReservationProcessingServiceTest {
 
                     // then
                     assertThat(result.isSuccess()).isFalse();
-                    assertThat(result.getFailureReason()).isEqualTo(FailureReason.UNKNOWN_PROPERTY);
+                    assertThat(result.getFailureReason()).isEqualTo(FailureReason.UNKNOWN_ROOM);
 
                     // Reservation 저장하지 않음
                     then(reservationRepository).should(never()).save(any());
@@ -319,7 +296,7 @@ class ReservationProcessingServiceTest {
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
+                    given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                             .willReturn(Optional.empty());
 
                     // when
@@ -332,35 +309,7 @@ class ReservationProcessingServiceTest {
 
                     ReservationEventEntity finalSaved = captor.getAllValues().get(1);
                     assertThat(finalSaved.isProcessed()).isFalse();
-                    assertThat(finalSaved.getErrorMessage()).contains("UNKNOWN_PROPERTY");
-                }
-            }
-
-            @Nested
-            @DisplayName("PlatformListing이 없으면")
-            class Context_when_platform_listing_not_found {
-
-                @Test
-                @DisplayName("UNKNOWN_ROOM 실패를 반환한다")
-                void it_returns_unknown_room_failure() {
-                    // given
-                    ReservationEvent event = createBookingEvent();
-                    Property property = createProperty();
-                    PlatformProperty platformProperty = createPlatformProperty(property);
-
-                    given(reservationEventRepository.save(any()))
-                            .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
-                            .willReturn(Optional.of(platformProperty));
-                    given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
-                            .willReturn(Optional.empty());
-
-                    // when
-                    ProcessingResult result = service.process(event);
-
-                    // then
-                    assertThat(result.isSuccess()).isFalse();
-                    assertThat(result.getFailureReason()).isEqualTo(FailureReason.UNKNOWN_ROOM);
+                    assertThat(finalSaved.getErrorMessage()).contains("UNKNOWN_ROOM");
                 }
             }
 
@@ -375,16 +324,13 @@ class ReservationProcessingServiceTest {
                     ReservationEvent event = createBookingEvent();
                     Property property = createProperty();
                     Room room = createRoom(property);
-                    PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
 
-                    Inventory bookedInventory = Inventory.createAvailable(room, LocalDate.of(2025, 3, 1));
+                    Inventory bookedInventory = Inventory.createBooked(room, LocalDate.of(2025, 3, 1));
                     bookedInventory.book(null); // BOOKED 상태로 변경
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
-                            .willReturn(Optional.of(platformProperty));
                     given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                             .willReturn(Optional.of(platformListing));
                     given(inventoryRepository.findUnavailableByRoomAndDateRange(any(), any(), any(), any()))
@@ -418,20 +364,17 @@ class ReservationProcessingServiceTest {
                     ReservationEvent event = createCancellationEvent();
                     Property property = createProperty();
                     Room room = createRoom(property);
-                    PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
                     Reservation existingReservation = createReservation(room);
 
-                    Inventory inventory1 = Inventory.createAvailable(room, LocalDate.of(2025, 3, 1));
+                    Inventory inventory1 = Inventory.createBooked(room, LocalDate.of(2025, 3, 1));
                     inventory1.book(existingReservation);
 
-                    Inventory inventory2 = Inventory.createAvailable(room, LocalDate.of(2025, 3, 2));
+                    Inventory inventory2 = Inventory.createBooked(room, LocalDate.of(2025, 3, 2));
                     inventory2.book(existingReservation);
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
-                            .willReturn(Optional.of(platformProperty));
                     given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                             .willReturn(Optional.of(platformListing));
                     given(reservationRepository.findByPlatformTypeAndPlatformReservationId(
@@ -465,13 +408,10 @@ class ReservationProcessingServiceTest {
                     ReservationEvent event = createCancellationEvent();
                     Property property = createProperty();
                     Room room = createRoom(property);
-                    PlatformProperty platformProperty = createPlatformProperty(property);
                     PlatformListing platformListing = createPlatformListing(room);
 
                     given(reservationEventRepository.save(any()))
                             .willAnswer(inv -> inv.getArgument(0));
-                    given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
-                            .willReturn(Optional.of(platformProperty));
                     given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                             .willReturn(Optional.of(platformListing));
                     given(reservationRepository.findByPlatformTypeAndPlatformReservationId(any(), any()))
@@ -498,13 +438,10 @@ class ReservationProcessingServiceTest {
                 ReservationEvent event = createBookingEvent();
                 Property property = createProperty();
                 Room room = createRoom(property);
-                PlatformProperty platformProperty = createPlatformProperty(property);
                 PlatformListing platformListing = createPlatformListing(room);
 
                 given(reservationEventRepository.save(any()))
                         .willAnswer(inv -> inv.getArgument(0));
-                given(platformPropertyRepository.findByPlatformTypeAndPlatformPropertyId(any(), any()))
-                        .willReturn(Optional.of(platformProperty));
                 given(platformListingRepository.findByPlatformTypeAndPlatformRoomId(any(), any()))
                         .willReturn(Optional.of(platformListing));
                 given(inventoryRepository.findUnavailableByRoomAndDateRange(any(), any(), any(), any()))

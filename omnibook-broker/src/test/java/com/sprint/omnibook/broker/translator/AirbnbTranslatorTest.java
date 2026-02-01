@@ -77,7 +77,6 @@ class AirbnbTranslatorTest {
                         .platformReservationId("ABC123XYZW")
                         .eventType(EventType.BOOKING)
                         .roomId("listing-001")
-                        .propertyId("host-999")
                         .checkIn(LocalDate.of(2025, 8, 15))
                         .checkOut(LocalDate.of(2025, 8, 18))
                         .guestName("Minsu Kim")

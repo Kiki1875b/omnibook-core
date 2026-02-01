@@ -76,7 +76,7 @@ class YeogieottaeTranslatorTest {
                         .platformReservationId("YEO-12345678")
                         .eventType(EventType.BOOKING)
                         .roomId("RT-101")
-                        .propertyId("ACC-001")
+                        .propertyName("ACC-001")
                         .checkIn(LocalDate.of(2025, 8, 15))
                         .checkOut(LocalDate.of(2025, 8, 18))
                         .guestName("김민수")
