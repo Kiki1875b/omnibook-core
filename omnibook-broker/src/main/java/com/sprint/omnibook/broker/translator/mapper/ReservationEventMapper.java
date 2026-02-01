@@ -11,6 +11,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
+import com.sprint.omnibook.broker.translator.dto.AirbnbStatusCode;
+import com.sprint.omnibook.broker.translator.dto.YanoljaStatusCode;
+import com.sprint.omnibook.broker.translator.dto.YeogieottaeStatusCode;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -105,14 +109,14 @@ public interface ReservationEventMapper {
     @Named("parseCompactDate")
     default LocalDate parseCompactDate(String date) {
         if (date == null || date.isBlank()) return null;
-        return LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return LocalDate.parse(date, DateTimeFormatter.ofPattern(DateTimePatterns.COMPACT_DATE));
     }
 
     @Named("parseKstDateTime")
     default Instant parseKstDateTime(String dateTime) {
         if (dateTime == null || dateTime.isBlank()) return Instant.now();
-        LocalDateTime ldt = LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-        return ldt.atZone(ZoneId.of("Asia/Seoul")).toInstant();
+        LocalDateTime ldt = LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern(DateTimePatterns.KST_DATETIME));
+        return ldt.atZone(ZoneId.of(DateTimePatterns.TIMEZONE_KST)).toInstant();
     }
 
     @Named("parseEpochMillis")
@@ -146,9 +150,9 @@ public interface ReservationEventMapper {
     default ReservationStatus mapYanoljaStatus(String status) {
         if (status == null) return ReservationStatus.PENDING;
         return switch (status) {
-            case "예약완료" -> ReservationStatus.CONFIRMED;
-            case "취소" -> ReservationStatus.CANCELLED;
-            case "노쇼" -> ReservationStatus.NOSHOW;
+            case YanoljaStatusCode.CONFIRMED -> ReservationStatus.CONFIRMED;
+            case YanoljaStatusCode.CANCELLED -> ReservationStatus.CANCELLED;
+            case YanoljaStatusCode.NOSHOW -> ReservationStatus.NOSHOW;
             default -> ReservationStatus.PENDING;
         };
     }
@@ -157,9 +161,9 @@ public interface ReservationEventMapper {
     default ReservationStatus mapAirbnbStatus(String status) {
         if (status == null) return ReservationStatus.PENDING;
         return switch (status) {
-            case "ACCEPTED" -> ReservationStatus.CONFIRMED;
-            case "PENDING" -> ReservationStatus.PENDING;
-            case "CANCELLED", "DENIED" -> ReservationStatus.CANCELLED;
+            case AirbnbStatusCode.ACCEPTED -> ReservationStatus.CONFIRMED;
+            case AirbnbStatusCode.PENDING -> ReservationStatus.PENDING;
+            case AirbnbStatusCode.CANCELLED, AirbnbStatusCode.DENIED -> ReservationStatus.CANCELLED;
             default -> ReservationStatus.PENDING;
         };
     }
@@ -167,10 +171,10 @@ public interface ReservationEventMapper {
     @Named("mapYeogieottaeStatus")
     default ReservationStatus mapYeogieottaeStatus(int state) {
         return switch (state) {
-            case 1 -> ReservationStatus.CONFIRMED;
-            case 2 -> ReservationStatus.CANCELLED;
-            case 3 -> ReservationStatus.COMPLETED;
-            case 4 -> ReservationStatus.NOSHOW;
+            case YeogieottaeStatusCode.CONFIRMED -> ReservationStatus.CONFIRMED;
+            case YeogieottaeStatusCode.CANCELLED -> ReservationStatus.CANCELLED;
+            case YeogieottaeStatusCode.COMPLETED -> ReservationStatus.COMPLETED;
+            case YeogieottaeStatusCode.NOSHOW -> ReservationStatus.NOSHOW;
             default -> ReservationStatus.PENDING;
         };
     }

@@ -148,12 +148,15 @@ public class EventIngestionService {
         }
     }
 
+    /**
+     * 헤더 문자열을 PlatformType으로 변환한다.
+     */
     private PlatformType mapPlatform(String header) {
         if (header == null) return null;
         return switch (header.toUpperCase()) {
-            case "A", "YANOLJA" -> PlatformType.YANOLJA;
-            case "B", "AIRBNB" -> PlatformType.AIRBNB;
-            case "C", "YEOGIEOTTAE" -> PlatformType.YEOGIEOTTAE;
+            case PlatformHeaderAlias.YANOLJA_SHORT, PlatformHeaderAlias.YANOLJA -> PlatformType.YANOLJA;
+            case PlatformHeaderAlias.AIRBNB_SHORT, PlatformHeaderAlias.AIRBNB -> PlatformType.AIRBNB;
+            case PlatformHeaderAlias.YEOGIEOTTAE_SHORT, PlatformHeaderAlias.YEOGIEOTTAE -> PlatformType.YEOGIEOTTAE;
             default -> null;
         };
     }
