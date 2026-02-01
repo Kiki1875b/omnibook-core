@@ -59,6 +59,9 @@
 | **PostgreSQL** (reservation) | 예약 상태 | 최종 상태 |
 | **PostgreSQL** (inventory) | 날짜별 재고 | 예약 가능 여부 |
 
+<img width="1176" height="846" alt="image" src="https://github.com/user-attachments/assets/f731d09c-0f11-4af5-9e7f-fca29948dc40" />
+
+
 ## 모듈 구조
 
 ```
@@ -80,20 +83,6 @@ omnibook-core/
         ├── scenario/         # 테스트 시나리오
         ├── chaos/            # Chaos Engineering
         └── sender/           # HTTP 전송
-```
-
-## 도메인 모델
-
-```
-Property ───1:N─── Room ───1:N─── PlatformListing
-                    │
-                    ├───1:N─── Inventory ───N:1─── Reservation
-                    │                                   │
-                    └───────────1:N─────────────────────┘
-                                                        │
-                                               ┌────────┴────────┐
-                                               │ ReservationEvent│
-                                               └─────────────────┘
 ```
 
 ### 핵심 엔티티
@@ -139,42 +128,6 @@ Content-Type: application/json
   - MapStruct (DTO 매핑)
   - Lombok
 
-## 실행 방법
-
-### 1. 인프라 실행
-
-```bash
-docker-compose up -d
-```
-
-- MongoDB: `localhost:27017`
-- Mongo Express: `localhost:8081`
-- PostgreSQL: `localhost:5432` (DB: omnibook)
-
-### 2. 브로커 실행
-
-```bash
-./gradlew :omnibook-broker:bootRun
-```
-
-기본 포트: `8080`
-
-### 3. 시뮬레이터 실행 (선택)
-
-```bash
-./gradlew :omnibook-simulator:bootRun
-```
-
-기본 포트: `8082`
-
-## 설계 원칙
-
-### 데이터 무손실
-
-- Payload에 오류가 있어도 무조건 수신
-- MongoDB에 원본 저장 후 파싱/처리
-- 파싱 실패 시 FailedEvent로 별도 관리
-
 ### Source of Truth
 
 - **MongoDB (raw_events)**: 이벤트 수신 사실 (Append-only, 업데이트 없음)
@@ -191,11 +144,6 @@ docker-compose up -d
 | 체크인 | checkInDate (yyyy-MM-dd) | checkIn (yyyy-MM-dd) | startDate (yyyyMMdd) |
 | 게스트 | guestName | firstName + lastName | buyerName |
 | 상태 | 한글 문자열 | 영문 문자열 | 정수 코드 |
-
-## Phase 문서
-
-- `Phase0/summary.md`: 설계 결정 및 구현 요약
-- `Phase0/broker/entity.md`: 엔티티 명세서
 
 ## 가정 사항 (Phase 0)
 
