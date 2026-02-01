@@ -46,3 +46,6 @@ target/
 
 CLAUDE.md
 .claude/
+Phase*/
+.grepai/
+/postman
