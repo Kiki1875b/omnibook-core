@@ -114,7 +114,7 @@ class ReservationProcessingServiceTest {
                 .roomType("DELUXE")
                 .capacity(2)
                 .build();
-        room.setProperty(property);
+        property.addRoom(room);
         return room;
     }
 
@@ -123,7 +123,7 @@ class ReservationProcessingServiceTest {
                 .platformType(PlatformType.YANOLJA)
                 .platformRoomId("ROOM-001")
                 .build();
-        listing.setRoom(room);
+        room.addPlatformListing(listing);
         return listing;
     }
 

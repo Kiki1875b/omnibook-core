@@ -120,7 +120,6 @@ class ReservationEventMapperTest {
             AirbnbPayload payload = new AirbnbPayload();
             payload.setConfirmationCode("ABC123XYZW");
             payload.setListingId("listing-001");
-            payload.setHostId("host-999");
             payload.setListingName("Seoul Apartment");
             payload.setCheckIn("2025-08-15");
             payload.setCheckOut("2025-08-18");
