@@ -2,6 +2,7 @@ package com.sprint.omnibook.broker.ingestion;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.omnibook.broker.api.exception.ErrorCode;
 import com.sprint.omnibook.broker.event.EventType;
 import com.sprint.omnibook.broker.event.PlatformType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
@@ -110,10 +111,10 @@ class EventIngestionServiceTest {
                         .willReturn(ProcessingResult.success(null, null));
 
                 // when
-                boolean result = service.ingest(request);
+                IngestionResult result = service.ingest(request);
 
                 // then
-                assertThat(result).isTrue();
+                assertThat(result.success()).isTrue();
                 then(expectedTranslator).should().translate(any(), eq(EventType.BOOKING));
             }
 
@@ -157,10 +158,12 @@ class EventIngestionServiceTest {
                 );
 
                 // when
-                boolean result = service.ingest(request);
+                IngestionResult result = service.ingest(request);
 
                 // then
-                assertThat(result).isFalse();
+                assertThat(result.success()).isFalse();
+                assertThat(result.failureReason()).contains("알 수 없는 플랫폼");
+                assertThat(result.errorCode()).isEqualTo(ErrorCode.INVALID_PLATFORM);
                 assertThat(failedEventStore.count()).isEqualTo(1);
                 assertThat(failedEventStore.findAll().get(0).getErrorMessage())
                         .contains("알 수 없는 플랫폼");
@@ -184,10 +187,12 @@ class EventIngestionServiceTest {
                         .willThrow(new TranslationException("파싱 실패"));
 
                 // when
-                boolean result = service.ingest(request);
+                IngestionResult result = service.ingest(request);
 
                 // then
-                assertThat(result).isFalse();
+                assertThat(result.success()).isFalse();
+                assertThat(result.failureReason()).isEqualTo("파싱 실패");
+                assertThat(result.errorCode()).isEqualTo(ErrorCode.EVENT_PARSE_ERROR);
                 assertThat(failedEventStore.count()).isEqualTo(1);
                 FailedEvent failed = failedEventStore.findAll().get(0);
                 assertThat(failed.getEventId()).isEqualTo("evt-1");
@@ -213,10 +218,10 @@ class EventIngestionServiceTest {
                         .willReturn(ProcessingResult.success(null, null));
 
                 // when
-                boolean result = service.ingest(request);
+                IngestionResult result = service.ingest(request);
 
                 // then
-                assertThat(result).isTrue();
+                assertThat(result.success()).isTrue();
                 then(reservationProcessingService).should().process(any());
             }
 
@@ -235,10 +240,12 @@ class EventIngestionServiceTest {
                                 com.sprint.omnibook.broker.processing.FailureReason.UNKNOWN_ROOM));
 
                 // when
-                boolean result = service.ingest(request);
+                IngestionResult result = service.ingest(request);
 
                 // then
-                assertThat(result).isFalse();
+                assertThat(result.success()).isFalse();
+                assertThat(result.failureReason()).isEqualTo("UNKNOWN_ROOM");
+                assertThat(result.errorCode()).isEqualTo(ErrorCode.UNKNOWN_ROOM);
                 // FailedEventStore에는 저장하지 않음 (ReservationEventEntity에 기록됨)
                 assertThat(failedEventStore.count()).isEqualTo(0);
             }
@@ -287,6 +294,7 @@ class EventIngestionServiceTest {
 
             // then
             assertThat(result.success()).isFalse();
+            assertThat(result.errorCode()).isEqualTo(ErrorCode.EVENT_PARSE_ERROR);
             then(rawEventService).should().store(invalidRawBody, headers);
             assertThat(failedEventStore.count()).isEqualTo(1);
             assertThat(failedEventStore.findAll().get(0).getErrorMessage())

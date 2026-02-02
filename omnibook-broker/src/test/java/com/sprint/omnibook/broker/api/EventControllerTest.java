@@ -1,6 +1,8 @@
 package com.sprint.omnibook.broker.api;
 
+import com.sprint.omnibook.broker.api.dto.ErrorResponse;
 import com.sprint.omnibook.broker.api.dto.EventResponse;
+import com.sprint.omnibook.broker.api.exception.ErrorCode;
 import com.sprint.omnibook.broker.ingestion.EventHeaders;
 import com.sprint.omnibook.broker.ingestion.EventIngestionService;
 import com.sprint.omnibook.broker.ingestion.IngestionResult;
@@ -55,16 +57,19 @@ class EventControllerTest {
                         """;
 
                 given(ingestionService.process(eq(rawBody), any(EventHeaders.class)))
-                        .willReturn(new IngestionResult("evt-123", true));
+                        .willReturn(IngestionResult.success("evt-123"));
 
                 // when
-                ResponseEntity<EventResponse> response = controller.receiveEvent(
+                ResponseEntity<?> response = controller.receiveEvent(
                         "evt-123", "A", "BOOKING", "corr-456", rawBody);
 
                 // then
                 assertThat(response.getStatusCode().value()).isEqualTo(200);
-                assertThat(response.getBody().getEventId()).isEqualTo("evt-123");
-                assertThat(response.getBody().getStatus()).isEqualTo("ACCEPTED");
+                assertThat(response.getBody()).isInstanceOf(EventResponse.class);
+
+                EventResponse eventResponse = (EventResponse) response.getBody();
+                assertThat(eventResponse.getEventId()).isEqualTo("evt-123");
+                assertThat(eventResponse.getStatus()).isEqualTo("ACCEPTED");
 
                 ArgumentCaptor<EventHeaders> headersCaptor = ArgumentCaptor.forClass(EventHeaders.class);
                 then(ingestionService).should().process(eq(rawBody), headersCaptor.capture());
@@ -82,8 +87,8 @@ class EventControllerTest {
         class Context_when_translation_fails {
 
             @Test
-            @DisplayName("SAVED_FOR_RETRY 응답을 반환한다")
-            void it_returns_saved_for_retry() throws Exception {
+            @DisplayName("ErrorResponse를 반환한다")
+            void it_returns_error_response() throws Exception {
                 // given
                 String rawBody = """
                         {
@@ -94,16 +99,20 @@ class EventControllerTest {
                         """;
 
                 given(ingestionService.process(eq(rawBody), any(EventHeaders.class)))
-                        .willReturn(new IngestionResult("evt-fail", false));
+                        .willReturn(IngestionResult.failure("evt-fail", "지원하지 않는 플랫폼입니다.", ErrorCode.INVALID_PLATFORM));
 
                 // when
-                ResponseEntity<EventResponse> response = controller.receiveEvent(
-                        null, "A", "BOOKING", null, rawBody);
+                ResponseEntity<?> response = controller.receiveEvent(
+                        null, "UNKNOWN", "BOOKING", null, rawBody);
 
                 // then
-                assertThat(response.getStatusCode().value()).isEqualTo(202);
-                assertThat(response.getBody().getEventId()).isEqualTo("evt-fail");
-                assertThat(response.getBody().getStatus()).isEqualTo("SAVED_FOR_RETRY");
+                assertThat(response.getStatusCode().value()).isEqualTo(400);
+                assertThat(response.getBody()).isInstanceOf(ErrorResponse.class);
+
+                ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+                assertThat(errorResponse.getCode()).isEqualTo("INVALID_PLATFORM");
+                assertThat(errorResponse.getReason()).isEqualTo("지원하지 않는 플랫폼입니다.");
+                assertThat(errorResponse.getDetails()).containsEntry("eventId", "evt-fail");
             }
         }
     }
