@@ -3,10 +3,12 @@ package com.sprint.omnibook.broker.ingestion;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.omnibook.broker.api.dto.IncomingEventRequest;
+import com.sprint.omnibook.broker.api.exception.ErrorCode;
 import com.sprint.omnibook.broker.event.EventType;
 import com.sprint.omnibook.broker.event.PlatformType;
 import com.sprint.omnibook.broker.event.ReservationEvent;
 import com.sprint.omnibook.broker.persistence.RawEventService;
+import com.sprint.omnibook.broker.processing.FailureReason;
 import com.sprint.omnibook.broker.processing.ProcessingResult;
 import com.sprint.omnibook.broker.processing.ReservationProcessingService;
 import com.sprint.omnibook.broker.translator.PayloadTranslator;
@@ -55,13 +57,13 @@ public class EventIngestionService {
             request = parseToIngestRequest(rawBody, headers);
         } catch (JsonProcessingException e) {
             String eventId = resolveEventId(headers.eventId(), null);
+            String reason = IngestionErrorMessage.JSON_PARSE_FAILED_PREFIX + e.getMessage();
             saveFailedEventForParseError(eventId, headers, rawBody, e.getMessage());
-            return new IngestionResult(eventId, false);
+            return IngestionResult.failure(eventId, reason, ErrorCode.EVENT_PARSE_ERROR);
         }
 
         // 3. 비즈니스 처리
-        boolean success = ingest(request);
-        return new IngestionResult(request.eventId(), success);
+        return ingest(request);
     }
 
     private IngestRequest parseToIngestRequest(String rawBody, EventHeaders headers) throws JsonProcessingException {
@@ -95,7 +97,7 @@ public class EventIngestionService {
                 .eventType(headers.eventType())
                 .correlationId(headers.correlationId())
                 .rawPayload(rawBody)
-                .errorMessage("JSON 파싱 실패: " + errorMessage)
+                .errorMessage(IngestionErrorMessage.JSON_PARSE_FAILED_PREFIX + errorMessage)
                 .failedAt(Instant.now())
                 .build();
 
@@ -105,27 +107,29 @@ public class EventIngestionService {
     /**
      * Translator 처리 및 예약 처리.
      *
-     * @return 처리 성공 시 true, 실패 시 false
+     * @return 처리 결과 (성공/실패 및 실패 사유 포함)
      */
-    boolean ingest(IngestRequest request) {
+    IngestionResult ingest(IngestRequest request) {
         PlatformType platform = mapPlatform(request.platformHeader());
         EventType eventType = mapEventType(request.eventTypeHeader());
 
         if (platform == null) {
-            saveFailedEvent(request, "알 수 없는 플랫폼: " + request.platformHeader());
-            return false;
+            String reason = IngestionErrorMessage.UNKNOWN_PLATFORM_PREFIX + request.platformHeader();
+            saveFailedEvent(request, reason);
+            return IngestionResult.failure(request.eventId(), reason, ErrorCode.INVALID_PLATFORM);
         }
 
         PayloadTranslator translator = translators.get(platform);
         if (translator == null) {
-            saveFailedEvent(request, "Translator 없음: " + platform);
-            return false;
+            String reason = IngestionErrorMessage.TRANSLATOR_NOT_FOUND_PREFIX + platform;
+            saveFailedEvent(request, reason);
+            return IngestionResult.failure(request.eventId(), reason, ErrorCode.TRANSLATOR_NOT_FOUND);
         }
 
         String rawPayload = extractRawPayload(request);
         if (rawPayload == null) {
-            saveFailedEvent(request, "payload JSON 변환 실패");
-            return false;
+            saveFailedEvent(request, IngestionErrorMessage.PAYLOAD_SERIALIZATION_FAILED);
+            return IngestionResult.failure(request.eventId(), IngestionErrorMessage.PAYLOAD_SERIALIZATION_FAILED, ErrorCode.PAYLOAD_SERIALIZATION_FAILED);
         }
 
         try {
@@ -138,13 +142,19 @@ public class EventIngestionService {
             if (!result.isSuccess()) {
                 // ReservationProcessingService 내부에서 이미 실패 처리됨
                 // FailedEventStore에는 별도 저장하지 않음 (ReservationEventEntity에 기록됨)
-                return false;
+                FailureReason failureReason = result.getFailureReason();
+                String reason = failureReason != null
+                        ? failureReason.name()
+                        : IngestionErrorMessage.PROCESSING_FAILED;
+                ErrorCode errorCode = mapFailureReasonToErrorCode(failureReason);
+                return IngestionResult.failure(request.eventId(), reason, errorCode);
             }
 
-            return true;
+            return IngestionResult.success(request.eventId());
         } catch (TranslationException e) {
-            saveFailedEvent(request, e.getMessage());
-            return false;
+            String reason = e.getMessage();
+            saveFailedEvent(request, reason);
+            return IngestionResult.failure(request.eventId(), reason, ErrorCode.EVENT_PARSE_ERROR);
         }
     }
 
@@ -161,10 +171,13 @@ public class EventIngestionService {
         };
     }
 
+    /**
+     * 헤더 문자열을 EventType으로 변환한다.
+     */
     private EventType mapEventType(String header) {
         if (header == null) return EventType.BOOKING;
         return switch (header.toUpperCase()) {
-            case "CANCEL", "CANCELLATION" -> EventType.CANCELLATION;
+            case EventTypeHeaderAlias.CANCEL, EventTypeHeaderAlias.CANCELLATION -> EventType.CANCELLATION;
             default -> EventType.BOOKING;
         };
     }
@@ -178,11 +191,11 @@ public class EventIngestionService {
     }
 
     private void saveFailedEvent(IngestRequest request, String errorMessage) {
-        String rawPayload = null;
+        String rawPayload;
         try {
             rawPayload = objectMapper.writeValueAsString(request.payload());
         } catch (JsonProcessingException e) {
-            rawPayload = "직렬화 실패";
+            rawPayload = IngestionErrorMessage.SERIALIZATION_FAILED;
         }
 
         FailedEvent failed = FailedEvent.builder()
@@ -197,5 +210,19 @@ public class EventIngestionService {
                 .build();
 
         failedEventStore.save(failed);
+    }
+
+    /**
+     * FailureReason을 ErrorCode로 매핑한다.
+     */
+    private ErrorCode mapFailureReasonToErrorCode(FailureReason failureReason) {
+        if (failureReason == null) {
+            return ErrorCode.PROCESSING_FAILED;
+        }
+        return switch (failureReason) {
+            case UNKNOWN_ROOM -> ErrorCode.UNKNOWN_ROOM;
+            case NOT_AVAILABLE -> ErrorCode.NOT_AVAILABLE;
+            case ROOM_ALREADY_BOOKED -> ErrorCode.ROOM_ALREADY_BOOKED;
+        };
     }
 }
