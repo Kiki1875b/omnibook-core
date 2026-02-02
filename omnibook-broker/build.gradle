@@ -1,37 +1,43 @@
 plugins {
-	id 'org.springframework.boot' version '3.2.3'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.plugin.spring'
+    id 'org.jetbrains.kotlin.plugin.jpa'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'org.springframework.boot' version '3.2.3'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
+    // === Kotlin ===
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation 'org.jetbrains.kotlin:kotlin-reflect'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
 
-	// === Core Web Stack ===
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-aop'
+    // === Core Web Stack ===
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 
-	// === Persistence ===
-	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // === Persistence ===
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-	// === DB Drivers ===
-	runtimeOnly 'org.postgresql:postgresql'
+    // === DB Drivers ===
+    runtimeOnly 'org.postgresql:postgresql'
 
-	// === Mapping ===
-	implementation 'org.mapstruct:mapstruct:1.6.3'
+    // === Mapping (MapStruct with kapt) ===
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    kapt 'org.mapstruct:mapstruct-processor:1.6.3'
 
-	// === Lombok ===
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    // === Test ===
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.2.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
 
-	// === Test ===
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+tasks.named('test') {
+    useJUnitPlatform()
 }
