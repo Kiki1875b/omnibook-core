@@ -40,7 +40,7 @@ public class LoggingAspect {
                 if (ingestionResult.success()) {
                     log.info("이벤트 처리 성공");
                 } else {
-                    log.warn("이벤트 처리 실패 - 재시도 대상으로 저장됨");
+                    log.warn("이벤트 처리 실패: reason={}", ingestionResult.failureReason());
                 }
             }
 
